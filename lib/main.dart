@@ -1,4 +1,7 @@
+import 'dart:convert';
+
 import 'package:flutter/material.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 void main() {
   runApp(const MyApp());
@@ -28,6 +31,7 @@ class TodoList extends StatefulWidget {
 }
 
 class _TodoListState extends State<TodoList> {
+  late SharedPreferences _prefs;
   late TextEditingController todoController;
   var todoList = [];
 
@@ -35,6 +39,23 @@ class _TodoListState extends State<TodoList> {
   void initState() {
     todoController = TextEditingController();
     super.initState();
+    _loadPreference();
+  }
+
+  void _savePreference(todoList) {
+    var _todoList = jsonEncode(todoList);
+    _prefs.setString('todoList', _todoList);
+    print('_savePreference : $_todoList');
+  }
+
+  void _loadPreference() async {
+    _prefs = await SharedPreferences.getInstance();
+
+    setState(() {
+      todoList = jsonDecode(_prefs.getString('todoList') as String);
+      todoController.clear();
+      print('_loadPreference : $todoList');
+    });
   }
 
   @override
@@ -104,10 +125,9 @@ class _TodoListState extends State<TodoList> {
                           if (todoController.text.isEmpty) {
                             return;
                           }
-
-                          print('다음 값을 추가합니당 : ${todoController.text}');
                           setState(() {
                             todoList.add(todoController.text);
+                            _savePreference(todoList);
                             todoController.clear();
                           });
                         },
@@ -137,8 +157,8 @@ class _TodoListState extends State<TodoList> {
                         onPressed: () {
                           setState(() {
                             todoList.removeAt(todoList.indexOf(todo));
+                            _savePreference(todoList);
                           });
-                          print('todoList: $todoList');
                         }),
                   );
                 }).toList(),
@@ -162,6 +182,7 @@ class _TodoListState extends State<TodoList> {
                     onPressed: () {
                       setState(() {
                         todoList.clear();
+                        _savePreference(todoList);
                       });
                     },
                     child: Text('전체 삭제')),
